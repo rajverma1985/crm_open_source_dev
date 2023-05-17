@@ -17,22 +17,22 @@ networks:
         internal: false
 
 secrets:
-    mysql-user:
-        file: ./examples/with-secrets/secrets/mysql_user.secret
-    mysql-password:
-        file: ./examples/with-secrets/secrets/mysql_password.secret
+    pg-user:
+        file: ./secrets/pg_user.secret
+    pg-password:
+        file: ./secrets/pg_password.secret
 
 services:
-    mariadb:
-        image: mariadb:latest
+    pgdb:
+        image: pgdb:latest
         secrets:
-            - mysql-user
-            - mysql-password
+            - pg_user
+            - pg-password
         environment:
-            MYSQL_RANDOM_ROOT_PASSWORD: "1"
-            MYSQL_DATABASE: "dolibarr"
-            MYSQL_USER_FILE: "/run/secrets/mysql-user"
-            MYSQL_PASSWORD_FILE: "/run/secrets/mysql-password"
+            POSTGRES_DB: dolibarr_db
+            POSTGRES_PASSWORD_FILE: /run/secrets/postgresql_password
+            POSTGRES_USER: dolibarr
+            PGDATA: /var/lib/postgresql/data/pgdata
         networks:
             - internal-pod
 
@@ -41,17 +41,17 @@ services:
             context: ./docker-compose-links/${DOLI_VERSION}${PHP_VERSION}
         image: tuxgasy/dolibarr:${DOLI_VERSION}${PHP_VERSION}
         secrets:
-            - mysql-user
-            - mysql-password
+            - pg-user
+            - pg-password
         environment:
             DOLI_CRON: 1
             DOLI_CRON_KEY: xxxx
             DOLI_CRON_USER: administrator
-            DOLI_DB_USER_FILE: /run/secrets/mysql-user
-            DOLI_DB_PASSWORD_FILE: /run/secrets/mysql-password
-            DOLI_ADMIN_LOGIN: administrator
-            DOLI_ADMIN_PASSWORD: admin456
-            DOLI_DB_HOST: mariadb
+            DOLI_DB_USER_FILE: /run/secrets/pg-user
+            DOLI_DB_PASSWORD_FILE: /run/secrets/pg-password
+            DOLI_ADMIN_LOGIN: admin
+            DOLI_ADMIN_PASSWORD: admin
+            DOLI_DB_HOST: pgdb
             DOLI_DB_NAME: dolibarr
             DOLI_URL_ROOT: http://0.0.0.0
             WWW_USER_ID: 1000
@@ -69,14 +69,14 @@ services:
         volumes:
             - ./.volumes/dolibarr/custom:/var/www/html/custom
         depends_on:
-            - mariadb
+            - pgdb
         environment:
-            DOLI_DB_USER_FILE: "/run/secrets/mysql-user"
-            DOLI_DB_PASSWORD_FILE: "/run/secrets/mysql-password"
-            DOLI_ADMIN_LOGIN: "administrator"
-            DOLI_ADMIN_PASSWORD: "admin456"
-            DOLI_DB_HOST: mariadb
-            DOLI_DB_NAME: dolibarr
+            DOLI_DB_USER_FILE: "/run/secrets/pg-user"
+            DOLI_DB_PASSWORD_FILE: "/run/secrets/pg-password"
+            DOLI_ADMIN_LOGIN: "admin"
+            DOLI_ADMIN_PASSWORD: "admin"
+            DOLI_DB_HOST: pgdb
+            DOLI_DB_NAME: dolibarr_db
             DOLI_URL_ROOT: 'http://0.0.0.0'
             WWW_USER_ID: 1000
             WWW_GROUP_ID: 1000
