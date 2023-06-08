@@ -1,87 +1,28 @@
-# This docker-compose.yml file is used to build and test quickly
-# a specific version of Dolibarr
-#
-# Before build, define the variable DOLI_VERSION as following:
-# $ export DOLI_VERSION=4.0.4
-# And then, you can run :
-# $ docker-compose up
-#
-# More information about Docker-compose : https://docs.docker.com/compose/
-
-version: "3.8"
-
-networks:
-    internal-pod:
-        internal: true
-    external-pod:
-        internal: false
-
-secrets:
-    pg-user:
-        file: ./secrets/pg_user.secret
-    pg-password:
-        file: ./secrets/pg_password.secret
+version: "3"
 
 services:
-    pgdb:
-        image: postgres:latest
-        secrets:
-            - pg-user
-            - pg-password
-        environment:
-            POSTGRES_DB: dolibarr_db
-            POSTGRES_PASSWORD_FILE: /run/secrets/postgresql_password
-            POSTGRES_USER: dolibarr
-            PGDATA: /var/lib/postgresql/data/pgdata
-        networks:
-            - internal-pod
-
-    # cron:
-    #     build:
-    #         context: ./docker-compose-links/${DOLI_VERSION}${PHP_VERSION}
-    #     image: tuxgasy/dolibarr:${DOLI_VERSION}${PHP_VERSION}
-    #     secrets:
-    #         - pg-user
-    #         - pg-password
-    #     environment:
-    #         DOLI_CRON: 1
-    #         DOLI_CRON_KEY: somerrandom_key_that_cannot_be_guessed
-    #         DOLI_CRON_USER: administrator
-    #         DOLI_DB_USER_FILE: /run/secrets/pg-user
-    #         DOLI_DB_PASSWORD_FILE: /run/secrets/pg-password
-    #         DOLI_ADMIN_LOGIN: admin
-    #         DOLI_ADMIN_PASSWORD: admin
-    #         DOLI_DB_HOST: pgdb
-    #         DOLI_DB_NAME: dolibarr
-    #         DOLI_URL_ROOT: http://0.0.0.0
-    #         WWW_USER_ID: 1000
-    #         WWW_GROUP_ID: 1000
-    #     networks:
-    #         - internal-pod
-
     web:
-        build:
-            context: ./docker-compose-links/${DOLI_VERSION}${PHP_VERSION}
-        image: tuxgasy/dolibarr:${DOLI_VERSION}${PHP_VERSION}
-        secrets:
-            - pg-user
-            - pg-password
-        volumes:
-            - ./.volumes/dolibarr/custom:/var/www/html/custom
+        image: tuxgasy/dolibarr
         depends_on:
             - pgdb
         environment:
-            DOLI_DB_USER_FILE: "/run/secrets/pg-user"
-            DOLI_DB_PASSWORD_FILE: "/run/secrets/pg-password"
-            DOLI_ADMIN_LOGIN: "admin"
-            DOLI_ADMIN_PASSWORD: "admin"
             DOLI_DB_HOST: pgdb
-            DOLI_DB_NAME: dolibarr_db
+            DOLI_DB_USER: db_user
+            DOLI_DB_PASSWORD: dbpass
+            DOLI_DB_NAME: crm_db
             DOLI_URL_ROOT: 'http://0.0.0.0'
-            WWW_USER_ID: 1000
-            WWW_GROUP_ID: 1000
+            PHP_INI_DATE_TIMEZONE: 'Europe/AT'
+            DOLI_DB_TYPE: pgsql
+            DOLI_DB_HOST_PORT: 5432
         ports:
-            - "80:80"
-        networks:
-            - internal-pod
-            - external-pod
+            - "8080:80"
+
+    pgdb:
+        image: postgres:latest
+        environment:
+            - POSTGRES_DB=crm_db
+            - POSTGRES_PASSWORD=dbpass
+            - POSTGRES_USER=db_user
+            - PGDATA=/var/lib/postgresql/data/pgdata
+        ports:
+            - "5432:5432"
